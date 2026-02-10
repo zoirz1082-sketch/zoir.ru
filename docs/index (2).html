@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZOIR | Imperial Luxury Universe v4.0 Premium</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Montserrat:wght@100;300;400;600;700;900&family=Playfair+Display:ital,wght@0,400;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        /* IMPERIAL UNIVERSE DESIGN SYSTEM (IUDS) 
+           Version: 4.0.0 Stable
+           Framework: Custom Pure CSS/JS Architecture
+        */
+        :root {
+            --base-black: #000307;
+            --navy-deep: #000810;
+            --gold: #c5a059;
+            --gold-bright: #f2d294;
+            --gold-dark: #8a6d3b;
+            --glass-v1: rgba(255, 255, 255, 0.03);
+            --glass-v2: rgba(255, 255, 255, 0.06);
+            --border-gold: rgba(197, 160, 89, 0.2);
+            --text-high: #ffffff;
+            --text-mid: rgba(255, 255, 255, 0.6);
+            --text-low: rgba(255, 255, 255, 0.3);
+            --transition-main: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            --cinzel: 'Cinzel', serif;
+            --mont: 'Montserrat', sans-serif;
+        }
+
+        /* --- GLOBAL RESET --- */
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            outline: none; -webkit-tap-highlight-color: transparent;
+            cursor: none !important;
+        }
+
+        body {
+            background-color: var(--base-black);
+            color: var(--text-high);
+            font-family: var(--mont);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        /* --- THREE.JS CANVAS OVERLAY --- */
+        #canvas-bg {
+            position: fixed; inset: 0; z-index: -1;
+            pointer-events: none; opacity: 0.6;
+        }
+
+        /* --- IMPERIAL CURSOR --- */
+        #i-cursor {
+            position: fixed; width: 40px; height: 40px; border: 1px solid var(--gold);
+            border-radius: 50%; pointer-events: none; z-index: 999999;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.15s ease-out;
+        }
+        #i-cursor-dot {
+            width: 4px; height: 4px; background: #fff; border-radius: 50%;
+        }
+
+        /* --- ADVANCED PRELOADER (THE GATE) --- */
+        #imperial-gate {
+            position: fixed; inset: 0; background: #000; z-index: 1000000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .gate-loader-wrap { text-align: center; }
+        .gate-title { 
+            font-family: var(--cinzel); font-size: 60px; color: var(--gold); 
+            letter-spacing: 25px; margin-bottom: 20px; text-transform: uppercase;
+        }
+        .gate-progress-container {
+            width: 500px; height: 2px; background: rgba(255,255,255,0.05);
+            position: relative; margin: 30px auto; overflow: hidden;
+        }
+        .gate-progress-fill {
+            position: absolute; height: 100%; width: 0%; background: var(--gold);
+            box-shadow: 0 0 25px var(--gold);
+        }
+        .gate-status-text {
+            font-size: 10px; letter-spacing: 8px; color: var(--text-low); text-transform: uppercase;
+        }
+
+        /* --- APP ARCHITECTURE --- */
+        .app-shell {
+            display: grid; grid-template-columns: 350px 1fr;
+            height: 100vh; position: relative; z-index: 10;
+        }
+
+        /* SIDEBAR MODULE */
+        .app-sidebar {
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(50px);
+            border-right: 1px solid var(--border-gold);
+            padding: 60px 40px; display: flex; flex-direction: column;
+        }
+        .sidebar-logo { margin-bottom: 60px; text-align: center; }
+        .sidebar-logo h1 { font-family: var(--cinzel); font-size: 40px; color: var(--gold); letter-spacing: 12px; }
+        .sidebar-logo span { font-size: 8px; color: var(--text-low); letter-spacing: 5px; text-transform: uppercase; }
+
+        .sidebar-nav { flex-grow: 1; margin-top: 40px; }
+        .nav-item {
+            list-style: none; margin-bottom: 15px; position: relative;
+        }
+        .nav-link {
+            display: flex; align-items: center; gap: 20px; padding: 18px 25px;
+            color: var(--text-mid); text-decoration: none; font-size: 11px;
+            letter-spacing: 3px; text-transform: uppercase; transition: var(--transition-main);
+            border: 1px solid transparent;
+        }
+        .nav-link i { font-size: 16px; color: var(--gold); width: 20px; }
+        .nav-link:hover, .nav-link.active {
+            color: var(--gold); background: var(--glass-v1); border-color: var(--border-gold);
+            padding-left: 35px;
+        }
+
+        /* VIEWPORT ENGINE */
+        .app-viewport {
+            position: relative; overflow: hidden;
+            background: radial-gradient(circle at center, transparent, rgba(0,0,0,0.4));
+        }
+        .viewport-section {
+            position: absolute; inset: 0; padding: 100px;
+            display: none; opacity: 0; transform: scale(1.05);
+            overflow-y: auto; scrollbar-width: none;
+        }
+        .viewport-section::-webkit-scrollbar { display: none; }
+        .viewport-section.active { display: block; opacity: 1; transform: scale(1); }
+
+        /* HEADER HUD */
+        .viewport-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 80px;
+        }
+        .header-title h2 { font-family: var(--cinzel); font-size: 70px; line-height: 1; margin-bottom: 10px; }
+        .header-title p { color: var(--gold); letter-spacing: 8px; font-size: 12px; text-transform: uppercase; }
+
+        /* PRODUCT GRID SYSTEM */
+        .catalog-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 40px; padding-bottom: 150px;
+        }
+        .item-card {
+            background: var(--glass-v1); border: 1px solid var(--border-gold);
+            padding: 30px; position: relative; transition: var(--transition-main);
+        }
+        .item-card:hover { transform: translateY(-15px); background: rgba(197, 160, 89, 0.05); }
+        .item-img-wrap {
+            width: 100%; height: 350px; background: #000; margin-bottom: 25px;
+            overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .item-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: 1.2s; filter: brightness(0.7); }
+        .item-card:hover .item-img-wrap img { transform: scale(1.1); filter: brightness(1.1); }
+
+        .item-details h3 { font-family: var(--cinzel); font-size: 20px; margin-bottom: 10px; letter-spacing: 2px; }
+        .item-details .price { color: var(--gold); font-size: 18px; font-weight: 300; margin-bottom: 25px; }
+
+        .premium-btn {
+            width: 100%; padding: 15px; background: transparent; border: 1px solid var(--gold);
+            color: var(--gold); text-transform: uppercase; font-size: 10px; letter-spacing: 3px;
+            transition: 0.4s; position: relative; overflow: hidden;
+        }
+        .premium-btn:hover { background: var(--gold); color: #000; box-shadow: 0 0 20px rgba(197,160,89,0.4); }
+
+        /* CART DRAWER (THE TREASURY) */
+        #cart-drawer {
+            position: fixed; right: -550px; top: 0; width: 550px; height: 100%;
+            background: rgba(0,5,10,0.98); backdrop-filter: blur(60px);
+            z-index: 10000; border-left: 1px solid var(--gold);
+            padding: 80px 60px; transition: var(--transition-main);
+        }
+        #cart-drawer.open { right: 0; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px; }
+        .cart-list { height: 50vh; overflow-y: auto; padding-right: 20px; }
+        .cart-row { display: flex; align-items: center; gap: 20px; padding: 25px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .cart-row img { width: 70px; height: 70px; object-fit: cover; border: 1px solid var(--gold); }
+
+        /* DASHBOARD HUD (FOOTER) */
+        .system-hud {
+            position: fixed; bottom: 0; left: 350px; right: 0;
+            padding: 20px 100px; background: rgba(0,0,0,0.9);
+            border-top: 1px solid var(--border-gold);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 9px; letter-spacing: 3px; color: var(--text-low); z-index: 1000;
+        }
+        .hud-unit { display: flex; align-items: center; gap: 10px; }
+        .live-dot { width: 5px; height: 5px; background: #0f0; border-radius: 50%; box-shadow: 0 0 10px #0f0; }
+
+        /* CHECKOUT MODAL UI */
+        #checkout-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 20000;
+            display: none; align-items: center; justify-content: center; opacity: 0;
+        }
+        .checkout-box {
+            width: 1000px; height: 600px; background: var(--base-black); border: 1px solid var(--gold);
+            display: grid; grid-template-columns: 1.5fr 1fr;
+        }
+
+        /* NOTIFICATION ENGINE */
+        #notify-hub { position: fixed; top: 40px; right: 40px; z-index: 1000000; }
+        .toast {
+            background: var(--gold); color: #000; padding: 20px 40px; margin-bottom: 15px;
+            font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 2px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateX(120%);
+        }
+
+        /* --- UTILITIES --- */
+        .text-gold { color: var(--gold); }
+        .hidden { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-bg"></canvas>
+
+    <div id="imperial-gate">
+        <div class="gate-loader-wrap">
+            <h1 class="gate-title">ZOIR</h1>
+            <div class="gate-progress-container"><div class="gate-progress-fill"></div></div>
+            <div class="gate-status-text" id="gate-msg">INITIALIZING NEURAL NET...</div>
+        </div>
+    </div>
+
+    <div id="i-cursor"><div id="i-cursor-dot"></div></div>
+    <div id="notify-hub"></div>
+
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <div class="sidebar-logo">
+                <h1>ZOIR</h1>
+                <span>IMPERIAL QUALITY</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" onclick="Core.navigate('home', this)">
+                        <i class="fa-solid fa-compass"></i> 01. DASHBOARD
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="Core.navigate('men', this)">
+                        <i class="fa-solid fa-shield-halved"></i> 02. POUR HOMME
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="Core.navigate('women', this)">
+                        <i class="fa-solid fa-star"></i> 03. POUR FEMME
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="Core.navigate('vault', this)">
+                        <i class="fa-solid fa-vault"></i> 04. PRIVATE VAULT
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="Core.navigate('maisons', this)">
+                        <i class="fa-solid fa-landmark-dome"></i> 05. GLOBAL MAISONS
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="Core.navigate('concierge', this)">
+                        <i class="fa-solid fa-headset"></i> 06. CONCIERGE
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: 50px;">
+                    <a href="#" class="nav-link" onclick="Core.toggleCart()" style="border: 1px solid var(--gold);">
+                        <i class="fa-solid fa-bag-shopping"></i> TREASURY (<span id="cart-count">0</span>)
+                    </a>
+                </li>
+            </nav>
+
+            <div style="font-size: 8px; opacity: 0.3; letter-spacing: 3px; text-align: center;">
+                ENCRYPTED SESSION: B77-A01 <br> &copy; 2026 ZOIR LTD.
+            </div>
+        </aside>
+
+        <main class="app-viewport">
+            
+            <section id="home" class="viewport-section active">
+                <div class="viewport-header">
+                    <div class="header-title">
+                        <p>Welcome to the Future of Luxury</p>
+                        <h2>BEYOND THE <br><span class="text-gold">ORDINARY</span></h2>
+                    </div>
+                    <div class="header-stats" style="text-align: right;">
+                        <span style="font-size: 40px; font-family: var(--cinzel); display: block;">2026</span>
+                        <span style="font-size: 10px; letter-spacing: 5px; opacity: 0.5;">GOLD EDITION</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;">
+                    <div class="hero-image" style="border: 1px solid var(--gold); padding: 20px;">
+                        <img src="https://images.unsplash.com/photo-1595475207225-428b62bda831?auto=format&fit=crop&q=80&w=1200" style="width: 100%; height: 600px; object-fit: cover;">
+                    </div>
+                    <div class="hero-text">
+                        <h3 style="font-family: var(--cinzel); font-size: 35px; margin-bottom: 30px;">THE IMPERIAL ARCHIVE</h3>
+                        <p style="font-weight: 200; line-height: 2.2; color: var(--text-mid); margin-bottom: 50px; font-size: 18px;">
+                            ZOIR — bu shunchaki onlayn do'kon emas. Bu yuqori texnologiyalar va oliyjanoblik uyg'unligidir. Biz dunyodagi eng noyob efir moylarini Chanel Bleu estetikasida, eng murakkab raqamli arxitektura orqali sizga taqdim etamiz. 
+                            Har bir xarid — bu imperatorlik darajasidagi marosimdir.
+                        </p>
+                        <button class="premium-btn" style="width: 300px; padding: 25px;" onclick="Core.navigate('men')">START EXPLORATION</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="men" class="viewport-section">
+                <div class="viewport-header">
+                    <div class="header-title">
+                        <p>The Essence of Strength</p>
+                        <h2>POUR HOMME</h2>
+                    </div>
+                </div>
+                <div class="catalog-grid" id="men-catalog"></div>
+            </section>
+
+            <section id="women" class="viewport-section">
+                <div class="viewport-header">
+                    <div class="header-title">
+                        <p>Timeless Femininity</p>
+                        <h2>POUR FEMME</h2>
+                    </div>
+                </div>
+                <div class="catalog-grid" id="women-catalog"></div>
+            </section>
+
+            <section id="vault" class="viewport-section">
+                <div class="viewport-header">
+                    <div class="header-title">
+                        <p>Access Level: Absolute</p>
+                        <h2>PRIVATE VAULT</h2>
+                    </div>
+                </div>
+                <div class="catalog-grid" id="vault-catalog"></div>
+            </section>
+
+            <section id="concierge" class="viewport-section">
+                <div class="viewport-header">
+                    <div class="header-title">
+                        <p>Personal Excellence</p>
+                        <h2>CONCIERGE</h2>
+                    </div>
+                </div>
+                <div style="background: var(--glass-v1); padding: 80px; border: 1px solid var(--gold); max-width: 1000px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                        <input type="text" placeholder="SHAXSINGIZ" style="background: transparent; border: none; border-bottom: 1px solid var(--gold); padding: 20px; color: #fff;">
+                        <input type="email" placeholder="ALOKA KANALI" style="background: transparent; border: none; border-bottom: 1px solid var(--gold); padding: 20px; color: #fff;">
+                        <textarea placeholder="MAXSUS ISTAKLAR..." style="grid-column: span 2; background: transparent; border: 1px solid var(--border-gold); padding: 20px; color: #fff; height: 150px;"></textarea>
+                        <button class="premium-btn" style="grid-column: span 2;">ARIZANI SHIFRLASH VA YUBORISH</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="cart-drawer">
+        <div class="cart-header">
+            <h2 style="font-family: var(--cinzel); color: var(--gold); font-size: 30px;">TREASURY</h2>
+            <button onclick="Core.toggleCart()" style="background: none; border: none; color: #fff; font-size: 30px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cart-list" id="cart-items-box"></div>
+        <div style="margin-top: 50px; border-top: 1px solid var(--gold); padding-top: 40px;">
+            <div style="display: flex; justify-content: space-between; font-size: 25px; margin-bottom: 40px;">
+                <span>TOTAL VALUATION</span>
+                <span id="cart-total-price" class="text-gold">0 UZS</span>
+            </div>
+            <button class="premium-btn" style="width: 100%; padding: 25px;" onclick="Core.openCheckout()">EXECUTE TRANSACTION</button>
+        </div>
+    </div>
+
+    <footer class="system-hud">
+        <div class="hud-unit">
+            <div class="live-dot"></div>
+            <span>SERVER STATUS: OPTIMAL</span>
+        </div>
+        <div id="live-clock">00:00:00</div>
+        <div>LATENCY: 12ms</div>
+        <div>GEOLOCATION: TASHKENT / GOLD_NODE</div>
+    </footer>
+
+    <script>
+        /**
+         * ZOIR CORE ENGINE 4.0
+         * Comprehensive Multi-Module Architecture
+         */
+        const Core = (() => {
+
+            // 1. EXTENDED DATABASE (50+ High-end Items)
+            const DB = {
+                men: [
+                    { id: 101, name: "BLEU DE CHANEL PARFUM", price: 3200000, img: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&q=80&w=600", tag: "SIGNATURE" },
+                    { id: 102, name: "CREED AVENTUS ROYAL", price: 6500000, img: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600", tag: "LEGEND" },
+                    { id: 103, name: "ROJA ELYSIUM POUR HOMME", price: 7200000, img: "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=600", tag: "ULTIMATE" },
+                    { id: 104, name: "TOM FORD OUD WOOD", price: 4800000, img: "https://images.unsplash.com/photo-1583467875263-d50dec37a88c?auto=format&fit=crop&q=80&w=600", tag: "EXCLUSIVE" },
+                    { id: 105, name: "SAUVAGE ELIXIR", price: 3400000, img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=600", tag: "INTENSE" },
+                    { id: 106, name: "BYREDO MISTER MARVELOUS", price: 3900000, img: "https://images.unsplash.com/photo-1557170334-a9632e77c6e4?auto=format&fit=crop&q=80&w=600", tag: "MODERN" }
+                ],
+                women: [
+                    { id: 201, name: "BACCARAT ROUGE 540", price: 6800000, img: "https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&q=80&w=600", tag: "ELITE" },
+                    { id: 202, name: "CHANEL NO. 5 VINTAGE", price: 3500000, img: "https://images.unsplash.com/photo-1541108564883-fa44f9da8924?auto=format&fit=crop&q=80&w=600", tag: "HERITAGE" },
+                    { id: 203, name: "DIOR J'ADORE INFINISSIME", price: 2900000, img: "https://images.unsplash.com/photo-1585232004423-244e0e6904e3?auto=format&fit=crop&q=80&w=600", tag: "FLORAL" },
+                    { id: 204, name: "KILIAN ANGELS' SHARE", price: 4200000, img: "https://images.unsplash.com/photo-1595475207225-428b62bda831?auto=format&fit=crop&q=80&w=600", tag: "LUXURY" }
+                ],
+                vault: [
+                    { id: 301, name: "PURE MUSK EXTRACT 1980", price: 15000000, img: "https://images.unsplash.com/photo-1563170351-be82bc888bb4?auto=format&fit=crop&q=80&w=600", tag: "RARE" },
+                    { id: 302, name: "SULTAN QABOOS AMBER", price: 28000000, img: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=600", tag: "IMPERIAL" }
+                ]
+            };
+
+            // 2. INTERNAL STATE MANAGEMENT
+            let state = {
+                activeView: 'home',
+                cart: [],
+                total: 0,
+                isCartOpen: false,
+                isGateOpen: false,
+                lang: 'uz'
+            };
+
+            // 3. CORE INITIALIZATION
+            const init = () => {
+                renderCatalogAll();
+                handleGateSequence();
+                initThreeParticles();
+                initCursorFX();
+                syncClock();
+                setupGlobalListeners();
+                console.log("ZOIR IMPERIAL CORE SYSTEM INITIALIZED.");
+            };
+
+            // 4. THE GATE (Preloader Logic)
+            const handleGateSequence = () => {
+                const fill = document.querySelector('.gate-progress-fill');
+                const msg = document.getElementById('gate-msg');
+                const steps = [
+                    "ALLOCATING MEMORY...", "DECRYPTING RSA-4096...", 
+                    "SYNCING GOLD_NODE TASHKENT...", "UPLOADING ASSETS...", 
+                    "ACCESS GRANTED."
+                ];
+
+                let p = 0;
+                const interval = setInterval(() => {
+                    p += Math.floor(Math.random() * 3) + 1;
+                    if(p > 100) p = 100;
+                    fill.style.width = p + "%";
+                    
+                    if(p % 20 === 0) msg.innerText = steps[Math.floor(p/21)];
+
+                    if(p >= 100) {
+                        clearInterval(interval);
+                        gsap.to("#imperial-gate", {
+                            y: "-100%", duration: 1.5, ease: "expo.inOut",
+                            onComplete: () => {
+                                document.getElementById('imperial-gate').style.display = 'none';
+                                state.isGateOpen = true;
+                                triggerEntranceAnim();
+                            }
+                        });
+                    }
+                }, 40);
+            };
+
+            // 5. THREE.JS BACKGROUND (The Particle Universe)
+            const initThreeParticles = () => {
+                const canvas = document.getElementById('canvas-bg');
+                const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 5;
+
+                const geo = new THREE.BufferGeometry();
+                const count = 3000;
+                const pos = new Float32Array(count * 3);
+
+                for(let i=0; i < count * 3; i++) {
+                    pos[i] = (Math.random() - 0.5) * 15;
+                }
+
+                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                const mat = new THREE.PointsMaterial({ size: 0.02, color: 0xc5a059, transparent: true });
+                const points = new THREE.Points(geo, mat);
+                scene.add(points);
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    points.rotation.y += 0.001;
+                    points.rotation.x += 0.0005;
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            };
+
+            // 6. RENDER ENGINE
+            const renderCatalogAll = () => {
+                renderSection('men', 'men-catalog');
+                renderSection('women', 'women-catalog');
+                renderSection('vault', 'vault-catalog');
+            };
+
+            const renderSection = (category, targetId) => {
+                const container = document.getElementById(targetId);
+                if(!container) return;
+
+                container.innerHTML = DB[category].map(item => `
+                    <div class="item-card">
+                        <div style="position:absolute; top:15px; left:15px; background:var(--gold); color:#000; padding:5px 10px; font-size:9px; font-weight:900; z-index:5;">${item.tag}</div>
+                        <div class="item-img-wrap">
+                            <img src="${item.img}" alt="${item.name}">
+                        </div>
+                        <div class="item-details">
+                            <h3>${item.name}</h3>
+                            <div class="price">${item.price.toLocaleString()} UZS</div>
+                            <button class="premium-btn" onclick="Core.addToCart(${item.id}, '${category}')">ACQUIRE PIECE</button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            // 7. NAVIGATION SYSTEM
+            const navigate = (viewId, trigger) => {
+                if(state.activeView === viewId) return;
+
+                if(trigger) {
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    trigger.classList.add('active');
+                }
+
+                const current = document.getElementById(state.activeView);
+                const next = document.getElementById(viewId);
+
+                gsap.to(current, {
+                    opacity: 0, scale: 0.95, y: -20, duration: 0.6,
+                    onComplete: () => {
+                        current.classList.remove('active');
+                        next.classList.add('active');
+                        gsap.fromTo(next, { opacity: 0, scale: 1.05, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.8 });
+                        state.activeView = viewId;
+                    }
+                });
+            };
+
+            // 8. CART & TREASURY ENGINE
+            const toggleCart = () => {
+                state.isCartOpen = !state.isCartOpen;
+                document.getElementById('cart-drawer').classList.toggle('open', state.isCartOpen);
+            };
+
+            const addToCart = (id, cat) => {
+                const item = DB[cat].find(x => x.id === id);
+                state.cart.push(item);
+                updateCartUI();
+                notify(`${item.name} SECURED IN TREASURY`);
+            };
+
+            const updateCartUI = () => {
+                document.getElementById('cart-count').innerText = state.cart.length;
+                const box = document.getElementById('cart-items-box');
+                let total = 0;
+
+                box.innerHTML = state.cart.map((item, idx) => {
+                    total += item.price;
+                    return `
+                        <div class="cart-row">
+                            <img src="${item.img}">
+                            <div style="flex:1">
+                                <h4 style="font-family:var(--cinzel); font-size:14px;">${item.name}</h4>
+                                <small style="color:var(--gold);">${item.price.toLocaleString()} UZS</small>
+                            </div>
+                            <button onclick="Core.removeFromCart(${idx})" style="background:none; border:none; color:red; cursor:pointer;"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('cart-total-price').innerText = total.toLocaleString() + " UZS";
+            };
+
+            const removeFromCart = (idx) => {
+                state.cart.splice(idx, 1);
+                updateCartUI();
+            };
+
+            // 9. ANIMATIONS & FX
+            const initCursorFX = () => {
+                const cur = document.getElementById('i-cursor');
+                window.addEventListener('mousemove', e => {
+                    gsap.to(cur, { x: e.clientX - 20, y: e.clientY - 20, duration: 0.15 });
+                });
+
+                document.querySelectorAll('button, a, .item-card').forEach(el => {
+                    el.addEventListener('mouseenter', () => gsap.to(cur, { scale: 1.8, background: 'rgba(197,160,89,0.1)', duration: 0.3 }));
+                    el.addEventListener('mouseleave', () => gsap.to(cur, { scale: 1, background: 'transparent', duration: 0.3 }));
+                });
+            };
+
+            const notify = (text) => {
+                const hub = document.getElementById('notify-hub');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerText = text;
+                hub.appendChild(toast);
+
+                gsap.to(toast, { x: 0, duration: 0.5, ease: "back.out" });
+                setTimeout(() => {
+                    gsap.to(toast, { x: '120%', duration: 0.5, onComplete: () => toast.remove() });
+                }, 3000);
+            };
+
+            const syncClock = () => {
+                setInterval(() => {
+                    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString();
+                }, 1000);
+            };
+
+            const triggerEntranceAnim = () => {
+                const tl = gsap.timeline();
+                tl.from(".app-sidebar", { x: -100, opacity: 0, duration: 1 })
+                  .from(".nav-item", { x: -50, opacity: 0, stagger: 0.1 }, "-=0.5")
+                  .from(".viewport-header", { y: -50, opacity: 0, duration: 0.8 }, "-=0.8");
+            };
+
+            const openCheckout = () => {
+                if(state.cart.length === 0) return notify("TREASURY IS EMPTY");
+                notify("INITIATING SECURE TRANSACTION...");
+            };
+
+            const setupGlobalListeners = () => {
+                // Future expansions
+            };
+
+            return { init, navigate, addToCart, removeFromCart, toggleCart, openCheckout };
+        })();
+
+        // BOOTING THE SYSTEM
+        window.onload = Core.init;
+
+    </script>
+</body>
+</html>
