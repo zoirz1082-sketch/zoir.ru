@@ -1,0 +1,2 @@
+# zoir.ru
+zoir jamoasi
